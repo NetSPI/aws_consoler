@@ -1,0 +1,55 @@
+name: Upload latest pre-release
+
+on:
+  push:
+    tags:
+        - "v*-rc.*"
+
+jobs:
+  pre-release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: "3.x"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install setuptools wheel twine
+    - name: Build dists
+      run: |
+        python setup.py sdist bdist_wheel
+    - name: Draft GitHub release
+      id: create_release
+      uses: actions/create-release@latest
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: RC ${{ github.ref }}
+        draft: true
+        prerelease: true
+    - name: Prep for asset upload
+      run: |
+        cp dist/aws_consoler-*-py2.py3-none-any.whl pre-release.whl
+        cp dist/aws_consoler-*.tar.gz pre-release.tgz
+    - name: Attach tgz to GitHub release
+      uses: actions/upload-release-asset@latest
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: pre-release.tgz
+        asset_name: pre-release.tgz
+        asset_content_type: application/x-gtar
+    - name: Attach whl to GitHub release
+      uses: actions/upload-release-asset@latest
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: pre-release.whl
+        asset_name: pre-release.whl
+        asset_content_type: application/x-wheel+zip
