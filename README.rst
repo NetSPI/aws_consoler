@@ -6,8 +6,12 @@ AWS Consoler
 .. image:: https://img.shields.io/pypi/v/aws_consoler.svg
         :target: https://pypi.python.org/pypi/aws_consoler
 
-.. image:: https://img.shields.io/github/workflow/status/netspi/aws_consoler/Build%20application%20version/develop
-        :target: https://travis-ci.org/netspi/aws_consoler
+.. image:: https://img.shields.io/github/workflow/status/netspi/aws_consoler/Build%20package
+        :target: https://github.com/NetSPI/aws_consoler/actions
+
+.. image:: https://readthedocs.org/projects/aws-consoler/badge/?version=latest
+        :target: https://aws-consoler.readthedocs.io/en/latest/?badge=latest
+        :alt: Documentation Status
 
 
 A utility to convert your AWS CLI credentials into AWS console access.
