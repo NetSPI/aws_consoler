@@ -27,7 +27,8 @@ def run(args: argparse.Namespace) -> str:
     # If we have a profile, use that.
     if args.profile:
         logger.debug("Using CLI-provided profile.")
-        session = boto3.Session(profile_name=args.profile)
+        session = boto3.Session(profile_name=args.profile,
+                                region_name=args.region)
         logger.info("Profile session using \"%s\" established.", args.profile)
     # Otherwise, use the command line arguments
     elif args.access_key_id:
@@ -40,14 +41,14 @@ def run(args: argparse.Namespace) -> str:
     # Otherwise, let boto figure it out.
     else:
         logger.debug("No credentials detected, forwarding to Boto3.")
-        session = boto3.Session()
+        session = boto3.Session(region_name=args.region)
         logger.info("Boto3 session established.")
 
     # Get to temporary credentials
     # If we have a role ARN supplied, start assuming them
     if args.role_arn:
         logger.debug("Role detected, setting up STS.")
-        sts = session.client("sts")
+        sts = session.client("sts", endpoint_url=args.sts_endpoint)
         logger.info("Assuming role \"%s\" via STS.", args.role_arn)
         resp = sts.assume_role(RoleArn=args.role_arn,
                                RoleSessionName="aws_consoler")
@@ -61,7 +62,7 @@ def run(args: argparse.Namespace) -> str:
     # If we are still a permanent IAM credential, use sts:GetFederationToken
     elif session.get_credentials().get_frozen_credentials() \
             .access_key.startswith("AKIA"):
-        sts = session.client("sts")
+        sts = session.client("sts", endpoint_url=args.sts_endpoint)
         logger.warning("Creds still permanent, creating federated session.")
         # Effective access is calculated as the union of our permanent creds
         # and the policies supplied here. Use the AdministratorAccess policy
@@ -86,11 +87,18 @@ def run(args: argparse.Namespace) -> str:
             raise PermissionError(message)
 
     # Check that our credentials are valid.
-    sts = session.client("sts")
+    sts = session.client("sts", endpoint_url=args.endpoint_url)
     resp = sts.get_caller_identity()
     logger.info("Session valid, attempting to federate as %s.", resp["Arn"])
 
     # TODO: Detect things like user session credentials here.
+
+    # Get the partition-specific URLs.
+    partition_metadata = _get_partition_endpoints(args.region)
+    federation_endpoint = args.federation_endpoint if args.federation_endpoint \
+        else partition_metadata["federation"]
+    console_endpoint = args.console_endpoint if args.console_endpoint\
+        else partition_metadata["console"]
 
     # Generate our signin link, given our temporary creds
     creds = session.get_credentials().get_frozen_credentials()
@@ -106,8 +114,7 @@ def run(args: argparse.Namespace) -> str:
         "Session": json_creds
     }
     logger.debug("Creating console federation token.")
-    resp = requests.get(url="https://signin.aws.amazon.com/federation",
-                        params=token_params)
+    resp = requests.get(url=federation_endpoint, params=token_params)
     # Stacking AssumeRole sessions together will generate a 400 error here.
     try:
         resp.raise_for_status()
@@ -118,18 +125,17 @@ def run(args: argparse.Namespace) -> str:
 
     fed_token = json.loads(resp.text)["SigninToken"]
     logger.debug("Federation token obtained, building URL.")
-    console_params = {
-        "region": args.region
-    }
+    console_params = {}
+    if args.region:
+        console_params["region"] = args.region
     login_params = {
         "Action": "login",
         "Issuer": "consoler.local",
-        "Destination": "https://console.aws.amazon.com/console/home?"
+        "Destination": console_endpoint + "?"
                        + urllib.parse.urlencode(console_params),
         "SigninToken": fed_token
     }
-    login_url = "https://signin.aws.amazon.com/federation?" \
-                + urllib.parse.urlencode(login_params)
+    login_url = federation_endpoint + urllib.parse.urlencode(login_params)
 
     logger.info("URL generated!")
     return (login_url)
