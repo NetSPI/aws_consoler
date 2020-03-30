@@ -6,6 +6,7 @@ from botocore.exceptions import ClientError
 import argparse
 import urllib.parse
 import logging
+import re
 
 """Main module."""
 
@@ -132,3 +133,56 @@ def run(args: argparse.Namespace) -> str:
 
     logger.info("URL generated!")
     return (login_url)
+
+
+def _get_partition_endpoints(region: str):
+    # TODO: Implement boto/botocore#1715 when merged
+    logger = logging.getLogger(__name__)
+
+    # AWS China endpoints
+    if re.match(r"^cn\\-\\w+\\-\\d+$", region):
+        logger.info("Using AWS China partition.")
+        return {
+            "partition": "aws-cn",
+            "console": "https://console.amazonaws.cn/console/home",
+            "federation": "https://signin.amazonaws.cn/federation",
+        }
+
+    # AWS GovCloud endpoints
+    if re.match(r"^us\\-gov\\-\\w+\\-\\d+$", region):
+        logger.info("Using AWS GovCloud partition.")
+        return {
+            "partition": "aws-us-gov",
+            "console": "https://console.amazonaws-us-gov.com/console/home",
+            "federation": "https://signin.amazonaws-us-gov.com/federation"
+        }
+
+    # AWS ISO endpoints (guessing from suffixes in botocore's endpoints.json)
+    if re.match(r"^us\\-iso\\-\\w+\\-\\d+$", region):
+        logger.warning("Using undocumented AWS ISO partition, guessing URLs!")
+        return {
+            "partition": "aws-iso",
+            "console": "https://console.c2s.ic.gov/console/home",
+            "federation": "https://signin.c2s.ic.gov/federation"
+        }
+
+    # AWS ISOB endpoints (see above)
+    if re.match(r"^us\\-isob\\-\\w+\\-\\d+$", region):
+        logger.warning("Using undocumented AWS ISOB partition, guessing URLs!")
+        return {
+            "partition": "aws-iso-b",
+            "console": "https://console.sc2s.sgov.gov/console/home",
+            "federation": "https://signin.sc2s.sgov.gov/federation"
+        }
+
+    # Otherwise, we (should?) be using the default partition.
+    if re.match(r"^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$", region):
+        pass
+    else:
+        logger.warning("Could not detect partition! Using AWS Standard."
+                       "If this is incorrect, consider using -eF and -eC.")
+    return {
+        "partition": "aws",
+        "console": "https://console.aws.amazon.com/console/home",
+        "federation": "https://signin.aws.amazon.com/federation"
+    }
