@@ -12,7 +12,7 @@ To install AWS Consoler, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install aws_consoler
+    $ pip install aws-consoler
 
 This is the preferred method to install AWS Consoler, as it will always install the most recent stable release.
 

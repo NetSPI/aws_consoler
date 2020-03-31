@@ -64,9 +64,9 @@ def main(argv=sys.argv[1:]):
         "-r", "--role-arn",
         help="The role to assume for console access, if needed.")
     gen_grp.add_argument(
-        "-R", "--region", default="us-east-1",
+        "-R", "--region", default=None,
         help="The AWS region you'd like the console link to refer to. "
-             "Defaults to the profile's default region or 'us-east-1'.")
+             "If using -p, overrides the default region of the profile. ")
     gen_grp.add_argument(
         "-o", "--open", action="store_true",
         help="Open the generated link in your system's default browser.")
@@ -74,6 +74,28 @@ def main(argv=sys.argv[1:]):
         "-v", "--verbose", action="count",
         help="Verbosity, repeat for more verbose output (up to 3)")
     logger.debug("General group ready.")
+
+    adv_grp = parser.add_argument_group(title="Advanced arguments")
+    adv_grp.add_argument(
+        "-eS", "--sts-endpoint", default=None,
+        help="[advanced] The endpoint for connecting to STS, if connecting "
+             "from behind a corporate proxy or an unknown partition. Expects "
+             "a URL with a trailing slash. Overrides the URL based on -R."
+    )
+    adv_grp.add_argument(
+        "-eF", "--federation-endpoint",
+        help="[advanced] The endpoint for console federation, if connecting "
+             "from behind a corporate proxy or an unknown partition. Expects "
+             "a URL to send federation requests to."
+    )
+    adv_grp.add_argument(
+        "-eC", "--console-endpoint",
+        help="[advanced] The URL for console access, if connecting"
+             "from behind a corporate proxy or an unknown partition. Expects "
+             "a URL to forward the user to after obtaining their federation "
+             "token."
+    )
+    logger.debug("Advanced group ready.")
 
     logger.info("Parsing arguments...")
     if argv:
