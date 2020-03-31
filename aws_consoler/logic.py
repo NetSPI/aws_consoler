@@ -87,14 +87,14 @@ def run(args: argparse.Namespace) -> str:
             raise PermissionError(message)
 
     # Check that our credentials are valid.
-    sts = session.client("sts", endpoint_url=args.endpoint_url)
+    sts = session.client("sts", endpoint_url=args.sts_endpoint)
     resp = sts.get_caller_identity()
     logger.info("Session valid, attempting to federate as %s.", resp["Arn"])
 
     # TODO: Detect things like user session credentials here.
 
     # Get the partition-specific URLs.
-    partition_metadata = _get_partition_endpoints(args.region)
+    partition_metadata = _get_partition_endpoints(session.region_name)
     federation_endpoint = args.federation_endpoint if args.federation_endpoint \
         else partition_metadata["federation"]
     console_endpoint = args.console_endpoint if args.console_endpoint\
@@ -135,7 +135,8 @@ def run(args: argparse.Namespace) -> str:
                        + urllib.parse.urlencode(console_params),
         "SigninToken": fed_token
     }
-    login_url = federation_endpoint + urllib.parse.urlencode(login_params)
+    login_url = federation_endpoint + "?" \
+                + urllib.parse.urlencode(login_params)
 
     logger.info("URL generated!")
     return (login_url)
@@ -146,7 +147,7 @@ def _get_partition_endpoints(region: str):
     logger = logging.getLogger(__name__)
 
     # AWS China endpoints
-    if re.match(r"^cn\\-\\w+\\-\\d+$", region):
+    if re.match(r"^cn-\w+-\d+$", region):
         logger.info("Using AWS China partition.")
         return {
             "partition": "aws-cn",
@@ -155,7 +156,7 @@ def _get_partition_endpoints(region: str):
         }
 
     # AWS GovCloud endpoints
-    if re.match(r"^us\\-gov\\-\\w+\\-\\d+$", region):
+    if re.match(r"^us-gov-\w+-\d+$", region):
         logger.info("Using AWS GovCloud partition.")
         return {
             "partition": "aws-us-gov",
@@ -164,7 +165,7 @@ def _get_partition_endpoints(region: str):
         }
 
     # AWS ISO endpoints (guessing from suffixes in botocore's endpoints.json)
-    if re.match(r"^us\\-iso\\-\\w+\\-\\d+$", region):
+    if re.match(r"^us-iso-\w+-\d+$", region):
         logger.warning("Using undocumented AWS ISO partition, guessing URLs!")
         return {
             "partition": "aws-iso",
@@ -173,7 +174,7 @@ def _get_partition_endpoints(region: str):
         }
 
     # AWS ISOB endpoints (see above)
-    if re.match(r"^us\\-isob\\-\\w+\\-\\d+$", region):
+    if re.match(r"^us-isob-\w+-\d+$", region):
         logger.warning("Using undocumented AWS ISOB partition, guessing URLs!")
         return {
             "partition": "aws-iso-b",
@@ -182,10 +183,10 @@ def _get_partition_endpoints(region: str):
         }
 
     # Otherwise, we (should?) be using the default partition.
-    if re.match(r"^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$", region):
+    if re.match(r"^(us|eu|ap|sa|ca|me)-\w+-\d+$", region):
         pass
     else:
-        logger.warning("Could not detect partition! Using AWS Standard."
+        logger.warning("Could not detect partition! Using AWS Standard. "
                        "If this is incorrect, consider using -eF and -eC.")
     return {
         "partition": "aws",
