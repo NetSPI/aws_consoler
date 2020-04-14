@@ -4,4 +4,4 @@
 
 __author__ = """Ian Williams"""
 __email__ = 'ian.williams@netspi.com'
-__version__ = '1.0.0'
+__version__ = '1.1.0'

@@ -2,6 +2,12 @@
 History
 =======
 
+1.1.0 (2020-04-13)
+------------------
+
+* Added logic to auto-detect partitions
+* Added logic to override auto-detected endpoints, for corporate proxies
+
 1.0.0 (2020-03-14)
 ------------------
 
