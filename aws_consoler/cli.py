@@ -9,7 +9,7 @@ from requests.exceptions import HTTPError
 
 from aws_consoler.logic import run
 
-LOG_FORMAT = "%(asctime)s [%(name)s] %(levelname)s: %(message)s"
+LOG_FORMAT = "%(asctime)s [%(name)s:%(lineno)d] %(levelname)s: %(message)s"
 
 
 def main(argv=sys.argv[1:]):
