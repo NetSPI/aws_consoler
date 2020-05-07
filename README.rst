@@ -26,6 +26,7 @@ Features
 
 * Load credentials from the command line or from boto3 sources (envvars, profiles, IMDS)
 * Coordinate communication to AWS Federation endpoint
+* Select appropriate endpoint based on partition
 * Load resultant URL in user's browser of choice
 
 Credits

@@ -5,6 +5,7 @@ import argparse
 import sys
 import webbrowser
 import logging
+import pkg_resources
 from requests.exceptions import HTTPError
 
 from aws_consoler.logic import run
@@ -74,6 +75,15 @@ def main(argv=sys.argv[1:]):
         "-v", "--verbose", action="count",
         help="Verbosity, repeat for more verbose output (up to 3)")
     logger.debug("General group ready.")
+    gen_grp.add_argument(
+        "-V", "--version", action="version",
+        version="aws_consoler/{} boto3/{} botocore/{} Python/{}".format(
+            pkg_resources.get_distribution("aws_consoler").version,
+            pkg_resources.get_distribution("boto3").version,
+            pkg_resources.get_distribution("botocore").version,
+            sys.version
+        )
+    )
 
     adv_grp = parser.add_argument_group(title="Advanced arguments")
     adv_grp.add_argument(
